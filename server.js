@@ -165,7 +165,7 @@ app.get('/', (req, res) => {
 
 app.get('/api/check', async (req, res) => {
   const targetUrl = (req.query.url || '').toString();
-  const globalTimeout = 45000;
+  const globalTimeout = 90000;
 
   if (!/^https?:\/\//i.test(targetUrl)) {
     return res.status(400).json({ error: 'Please provide a valid http(s) URL via ?url=' });
@@ -208,7 +208,7 @@ app.get('/api/check', async (req, res) => {
     payload.timings.firstLoadMs = Date.now() - navStart;
 
     const idleStart = Date.now();
-    try { await page.waitForLoadState('networkidle', { timeout: 15000 }); payload.timings.networkIdleMs = Date.now() - idleStart; } catch (_) {}
+    try { await page.waitForLoadState('networkidle', { timeout: 30000 }); payload.timings.networkIdleMs = Date.now() - idleStart; } catch (_) {}
 
     await page.screenshot({ path: path.join(outDir, 'page.png'), fullPage: true });
     payload.summary.pageLoaded = true;
@@ -230,7 +230,7 @@ app.get('/api/check', async (req, res) => {
         if (f.url() && f.url() !== 'about:blank') info.navigated = true;
       } catch (e) { info.notes.push('navigate wait error: ' + e.message); }
 
-      try { await f.waitForLoadState('load', { timeout: 15000 }); info.loadState = 'load'; info.loadOk = true; } catch (e) { info.notes.push('waitForLoadState error/timeout'); }
+      try { await f.waitForLoadState('load', { timeout: 30000 }); info.loadState = 'load'; info.loadOk = true; } catch (e) { info.notes.push('waitForLoadState error/timeout'); }
 
       try {
         const el = await f.frameElement();
