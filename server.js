@@ -1,4 +1,4 @@
-// server.js
+// server.js (no preview iframe)
 // Minimal one-file web app: Express UI + Playwright backend checker
 // Run locally:
 //   npm install
@@ -45,7 +45,6 @@ app.get('/', (req, res) => {
   .err{background:rgba(239,68,68,.15);color:#fecaca}
   pre{white-space:pre-wrap;background:#0e1425;border-radius:12px;padding:12px;overflow:auto}
   a{color:#93c5fd}
-  iframe{width:100%;height:460px;border:1px solid #1f2937;border-radius:12px;background:#0e1425}
   .shots{display:flex;gap:12px;flex-wrap:wrap}
   .shots img{max-width:100%;height:160px;object-fit:cover;border-radius:12px;border:1px solid #1f2937}
 </style>
@@ -57,16 +56,12 @@ app.get('/', (req, res) => {
       <div class="row">
         <input id="url" type="url" placeholder="วาง URL เกม เช่น https://dev-v5.royalcasino.dk/spilleautomater/spil-for-sjov/book-bonanza" value="https://dev-v5.royalcasino.dk/spilleautomater/spil-for-sjov/book-bonanza" />
         <button id="run">ตรวจสอบ</button>
+        <a id="openNew" href="#" target="_blank" style="align-self:center;color:#93c5fd">เปิดในแท็บใหม่</a>
       </div>
       <div class="hint">ทูลนี้จะเปิดเบราว์เซอร์จริง (headless) ตรวจโหลดหน้า เช็ค iframes ว่านำทางออกจาก about:blank และรอให้สถานะโหลดสำเร็จ พร้อมเก็บสกรีนช็อต</div>
     </div>
 
     <div id="result" class="card" style="margin-top:16px;display:none"></div>
-
-    <div class="card" style="margin-top:16px">
-      <h3>พรีวิว URL ในหน้า (ไม่ได้ใช้วัดผล เพียงเพื่อดูหน้าตา)</h3>
-      <iframe id="preview" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
-    </div>
   </div>
 <script>
 (function(){
@@ -74,7 +69,7 @@ app.get('/', (req, res) => {
   var resBox = el('#result');
   var btn = el('#run');
   var urlIn = el('#url');
-  var preview = el('#preview');
+  var openNew = el('#openNew');
 
   function badge(ok){
     var cls = (ok===true ? 'ok' : (ok==='warn' ? 'warn' : 'err'));
@@ -144,7 +139,6 @@ app.get('/', (req, res) => {
     if(!target) return;
     btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
     resBox.style.display = 'none';
-    preview.src = target;
     try{
       var r = await fetch('/api/check?url=' + encodeURIComponent(target));
       var data = await r.json();
@@ -158,6 +152,11 @@ app.get('/', (req, res) => {
   }
 
   btn.addEventListener('click', run);
+  openNew.addEventListener('click', function(e){
+    e.preventDefault();
+    var target = (urlIn.value || '').trim();
+    if (target) window.open(target, '_blank');
+  });
 })();
 </script>
 </body>
