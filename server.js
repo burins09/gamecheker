@@ -1,8 +1,7 @@
 // server.js
 // Minimal one-file web app: Express UI + Playwright backend checker
-// How to run locally:
-//   npm init -y
-//   npm i express playwright
+// Run locally:
+//   npm install
 //   npx playwright install
 //   node server.js
 // Open http://localhost:3000
@@ -70,83 +69,96 @@ app.get('/', (req, res) => {
     </div>
   </div>
 <script>
-const el = (q) => document.querySelector(q);
-const resBox = el('#result');
-const btn = el('#run');
-const urlIn = el('#url');
-const preview = el('#preview');
+(function(){
+  var el = function(q){ return document.querySelector(q); };
+  var resBox = el('#result');
+  var btn = el('#run');
+  var urlIn = el('#url');
+  var preview = el('#preview');
 
-function badge(ok){
-  return `<span class="badge ${ok===true?'ok': ok==='warn'?'warn':'err'}">${ok===true?'PASS': ok==='warn'?'WARN':'FAIL'}</span>`
-}
-
-function render(data){
-  const { targetUrl, summary, pageStatus, network, consoleErrors, iframes, artifactsBase, timings, outDirName, error } = data;
-  const anyFail = !summary.pageLoaded || !summary.hasIframes || !summary.iframeNavigated;
-
-  let frameRows = '';
-  for(const f of iframes){
-    frameRows += `
-      <div class="kvs">
-        <div>ชื่อ iframe</div><div>${f.name||'-'}</div>
-        <div>URL</div><div>${f.url||'-'}</div>
-        <div>นำทางออกจาก about:blank</div><div>${badge(!!f.navigated)}</div>
-        <div>load state</div><div>${f.loadState||'-'}</div>
-        <div>สรุป frame</div><div>${badge(!!(f.navigated && f.loadOk))}</div>
-        <div>บันทึก</div><div>${(f.notes||[]).join('<br>')||'-'}</div>
-      </div>
-      ${f.screenshot?`<div class="shots"><a href="${f.screenshot}" target="_blank"><img src="${f.screenshot}" alt="iframe shot"/></a></div>`:''}
-      <hr style="border-color:#1f2937"/>
-    `
+  function badge(ok){
+    var cls = (ok===true ? 'ok' : (ok==='warn' ? 'warn' : 'err'));
+    var txt = (ok===true ? 'PASS' : (ok==='warn' ? 'WARN' : 'FAIL'));
+    return '<span class="badge ' + cls + '">' + txt + '</span>';
   }
 
-  resBox.innerHTML = `
-    <h2>ผลการตรวจ</h2>
-    <div class="kvs">
-      <div>URL</div><div><a href="${targetUrl}" target="_blank">${targetUrl}</a></div>
-      <div>Page loaded</div><div>${badge(!!summary.pageLoaded)}</div>
-      <div>พบ iframes</div><div>${summary.hasIframes? badge(true)+` (${iframes.length} รายการ)`: badge(false)}</div>
-      <div>มีอย่างน้อย 1 iframe ที่ OK</div><div>${badge(!!summary.iframeNavigated)}</div>
-      <div>สถานะเพจ</div><div>${pageStatus}</div>
-      <div>คำขอทั้งหมด</div><div>${network.totalRequests}</div>
-      <div>คำขอล้มเหลว</div><div>${network.failedRequests.length}</div>
-      <div>HTTP >= 400</div><div>${network.errorResponses.length}</div>
-      <div>Console errors</div><div>${consoleErrors.length}</div>
-      <div>First load (ms)</div><div>${timings.firstLoadMs||'-'}</div>
-      <div>Network idle (ms)</div><div>${timings.networkIdleMs||'-'}</div>
-      <div>Artifacts</div><div>
-        <div class="shots">
-          <a href="${artifactsBase}/page.png" target="_blank"><img src="${artifactsBase}/page.png" alt="page shot"/></a>
-        </div>
-        <div class="hint"><a href="${artifactsBase}/result.json" target="_blank">result.json</a> • โฟลเดอร์: ${outDirName}</div>
-      </div>
-    </div>
-    ${error?`<div class="hint" style="color:#fca5a5">Error: ${error}</div>`:''}
-    <h3 style="margin-top:16px">รายละเอียด Iframes</h3>
-    ${frameRows || '<div class="hint">ไม่พบ iframe</div>'}
-  `;
-  resBox.style.display = 'block';
-}
+  function render(data){
+    var targetUrl = data.targetUrl;
+    var summary = data.summary || {};
+    var pageStatus = data.pageStatus || '';
+    var network = data.network || { totalRequests: 0, failedRequests: [], errorResponses: [] };
+    var consoleErrors = data.consoleErrors || [];
+    var iframes = data.iframes || [];
+    var artifactsBase = data.artifactsBase || '';
+    var timings = data.timings || {};
+    var outDirName = data.outDirName || '';
+    var error = data.error;
 
-async function run(){
-  const target = urlIn.value.trim();
-  if(!target) return;
-  btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
-  resBox.style.display = 'none';
-  preview.src = target;
-  try{
-    const r = await fetch('/api/check?url=' + encodeURIComponent(target));
-    const data = await r.json();
-    render(data);
-  }catch(e){
-    resBox.style.display='block';
-    resBox.innerHTML = `<div class="hint" style="color:#fca5a5">เกิดข้อผิดพลาด: ${e.message}</div>`
-  }finally{
-    btn.disabled = false; btn.textContent = 'ตรวจสอบ';
+    var frameRows = '';
+    for (var i=0;i<iframes.length;i++){
+      var f = iframes[i];
+      frameRows += ''
+        + '<div class="kvs">'
+        +   '<div>ชื่อ iframe</div><div>' + (f.name||'-') + '</div>'
+        +   '<div>URL</div><div>' + (f.url||'-') + '</div>'
+        +   '<div>นำทางออกจาก about:blank</div><div>' + badge(!!f.navigated) + '</div>'
+        +   '<div>load state</div><div>' + (f.loadState||'-') + '</div>'
+        +   '<div>สรุป frame</div><div>' + badge(!!(f.navigated && f.loadOk)) + '</div>'
+        +   '<div>บันทึก</div><div>' + ((f.notes||[]).join('<br>')||'-') + '</div>'
+        + '</div>'
+        + (f.screenshot ? '<div class="shots"><a href="' + f.screenshot + '" target="_blank"><img src="' + f.screenshot + '" alt="iframe shot"/></a></div>' : '')
+        + '<hr style="border-color:#1f2937"/>';
+    }
+
+    var html = ''
+      + '<h2>ผลการตรวจ</h2>'
+      + '<div class="kvs">'
+      +   '<div>URL</div><div><a href="' + targetUrl + '" target="_blank">' + targetUrl + '</a></div>'
+      +   '<div>Page loaded</div><div>' + badge(!!summary.pageLoaded) + '</div>'
+      +   '<div>พบ iframes</div><div>' + (summary.hasIframes ? (badge(true) + ' (' + iframes.length + ' รายการ)') : badge(false)) + '</div>'
+      +   '<div>มีอย่างน้อย 1 iframe ที่ OK</div><div>' + badge(!!summary.iframeNavigated) + '</div>'
+      +   '<div>สถานะเพจ</div><div>' + pageStatus + '</div>'
+      +   '<div>คำขอทั้งหมด</div><div>' + network.totalRequests + '</div>'
+      +   '<div>คำขอล้มเหลว</div><div>' + network.failedRequests.length + '</div>'
+      +   '<div>HTTP >= 400</div><div>' + network.errorResponses.length + '</div>'
+      +   '<div>Console errors</div><div>' + consoleErrors.length + '</div>'
+      +   '<div>First load (ms)</div><div>' + (timings.firstLoadMs||'-') + '</div>'
+      +   '<div>Network idle (ms)</div><div>' + (timings.networkIdleMs||'-') + '</div>'
+      +   '<div>Artifacts</div><div>'
+      +     '<div class="shots">'
+      +       '<a href="' + artifactsBase + '/page.png" target="_blank"><img src="' + artifactsBase + '/page.png" alt="page shot"/></a>'
+      +     '</div>'
+      +     '<div class="hint"><a href="' + artifactsBase + '/result.json" target="_blank">result.json</a> • โฟลเดอร์: ' + outDirName + '</div>'
+      +   '</div>'
+      + '</div>'
+      + (error ? '<div class="hint" style="color:#fca5a5">Error: ' + error + '</div>' : '')
+      + '<h3 style="margin-top:16px">รายละเอียด Iframes</h3>'
+      + (frameRows || '<div class="hint">ไม่พบ iframe</div>');
+
+    resBox.innerHTML = html;
+    resBox.style.display = 'block';
   }
-}
 
-btn.addEventListener('click', run);
+  async function run(){
+    var target = (urlIn.value || '').trim();
+    if(!target) return;
+    btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
+    resBox.style.display = 'none';
+    preview.src = target;
+    try{
+      var r = await fetch('/api/check?url=' + encodeURIComponent(target));
+      var data = await r.json();
+      render(data);
+    }catch(e){
+      resBox.style.display='block';
+      resBox.innerHTML = '<div class="hint" style="color:#fca5a5">เกิดข้อผิดพลาด: ' + e.message + '</div>';
+    }finally{
+      btn.disabled = false; btn.textContent = 'ตรวจสอบ';
+    }
+  }
+
+  btn.addEventListener('click', run);
+})();
 </script>
 </body>
 </html>`);
