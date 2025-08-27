@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: rc-game-checker
+    env: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /
+    disk:
+      name: artifacts
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ART_DIR
+        value: /data
